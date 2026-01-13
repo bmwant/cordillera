@@ -1,6 +1,8 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { invoke } from "@tauri-apps/api/core";
   import { open } from "@tauri-apps/plugin-dialog";
+  import { listen } from "@tauri-apps/api/event";
   import Tabs from "$lib/components/Tabs.svelte";
   import Chart from "$lib/components/Chart.svelte";
   import TreeView from "$lib/components/TreeView.svelte";
@@ -37,16 +39,19 @@
   function handleTabChange(tab: string) {
     activeTab = tab;
   }
+
+  onMount(() => {
+    const unlisten = listen("menu-open-file", () => {
+      openFile();
+    });
+
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  });
 </script>
 
 <main class="app">
-  <header class="header">
-    <h1>Cordillera</h1>
-    <button class="open-btn" onclick={openFile} disabled={loading}>
-      {loading ? "Loading..." : "Open File"}
-    </button>
-  </header>
-
   {#if error}
     <div class="error">{error}</div>
   {/if}
@@ -71,63 +76,43 @@
   {:else if !loading}
     <div class="empty">
       <p>Open a Massif output file to visualize memory profiling data.</p>
+      <p class="hint">Use File menu or press <kbd>Cmd+O</kbd> to open a file</p>
       <p class="hint">
         Generate with: <code>valgrind --tool=massif ./your-program</code>
       </p>
+    </div>
+  {:else}
+    <div class="empty">
+      <p>Loading...</p>
     </div>
   {/if}
 </main>
 
 <style>
+  :global(html, body) {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+      Ubuntu, Cantarell, sans-serif;
+  }
+
   .app {
     display: flex;
     flex-direction: column;
     height: 100vh;
     overflow: hidden;
-  }
-
-  .header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
-    border-bottom: 1px solid #e0e0e0;
-    background: #fafafa;
-  }
-
-  .header h1 {
-    font-size: 18px;
-    font-weight: 600;
-    margin: 0;
-    color: #333;
-  }
-
-  .open-btn {
-    padding: 8px 16px;
-    background: #1976d2;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-
-  .open-btn:hover:not(:disabled) {
-    background: #1565c0;
-  }
-
-  .open-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+    background: #1e1e1e;
   }
 
   .error {
     padding: 12px 16px;
-    background: #ffebee;
-    color: #c62828;
-    border-bottom: 1px solid #ef9a9a;
+    background: #5c2d2d;
+    color: #f48771;
+    border-bottom: 1px solid #6d3b3b;
   }
 
   .info {
@@ -135,13 +120,14 @@
     align-items: center;
     justify-content: space-between;
     padding: 8px 16px;
-    background: #e3f2fd;
+    background: #252526;
     font-size: 13px;
+    border-bottom: 1px solid #3c3c3c;
   }
 
   .info .cmd {
-    color: #1565c0;
-    font-family: monospace;
+    color: #9cdcfe;
+    font-family: "SF Mono", Monaco, "Cascadia Code", monospace;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -149,13 +135,14 @@
   }
 
   .info .stats {
-    color: #666;
+    color: #808080;
     flex-shrink: 0;
   }
 
   .content {
     flex: 1;
     overflow: auto;
+    background: #1e1e1e;
   }
 
   .empty {
@@ -164,7 +151,7 @@
     align-items: center;
     justify-content: center;
     height: 100%;
-    color: #666;
+    color: #808080;
     text-align: center;
     padding: 32px;
   }
@@ -175,55 +162,24 @@
 
   .empty .hint {
     font-size: 13px;
-    color: #888;
+    color: #6a6a6a;
   }
 
   .empty code {
-    background: #f5f5f5;
+    background: #2d2d2d;
     padding: 4px 8px;
     border-radius: 4px;
-    font-family: monospace;
+    font-family: "SF Mono", Monaco, "Cascadia Code", monospace;
+    color: #ce9178;
   }
 
-  @media (prefers-color-scheme: dark) {
-    .header {
-      background: #1a1a1a;
-      border-bottom-color: #333;
-    }
-
-    .header h1 {
-      color: #e0e0e0;
-    }
-
-    .error {
-      background: #4a1c1c;
-      color: #ef9a9a;
-      border-bottom-color: #6d2f2f;
-    }
-
-    .info {
-      background: #1a2733;
-    }
-
-    .info .cmd {
-      color: #64b5f6;
-    }
-
-    .info .stats {
-      color: #aaa;
-    }
-
-    .empty {
-      color: #aaa;
-    }
-
-    .empty .hint {
-      color: #777;
-    }
-
-    .empty code {
-      background: #333;
-      color: #e0e0e0;
-    }
+  .empty kbd {
+    background: #2d2d2d;
+    padding: 2px 6px;
+    border-radius: 3px;
+    border: 1px solid #3c3c3c;
+    font-family: "SF Mono", Monaco, "Cascadia Code", monospace;
+    font-size: 12px;
+    color: #d4d4d4;
   }
 </style>

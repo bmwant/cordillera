@@ -32,7 +32,7 @@
   }
 </script>
 
-<div class="tree-node" style="--depth: {depth}">
+<div class="tree-node">
   <div
     class="node-header"
     class:expandable={node.children.length > 0}
@@ -64,17 +64,16 @@
 
 <style>
   .tree-node {
-    font-family: monospace;
-    font-size: 13px;
+    font-family: "SF Mono", Monaco, "Cascadia Code", monospace;
+    font-size: 12px;
   }
 
   .node-header {
     display: flex;
     align-items: baseline;
     gap: 8px;
-    padding: 4px 8px;
-    padding-left: calc(var(--depth) * 20px + 8px);
-    border-radius: 4px;
+    padding: 3px 8px;
+    border-radius: 3px;
     cursor: default;
     white-space: nowrap;
     overflow: hidden;
@@ -86,13 +85,14 @@
   }
 
   .node-header:hover {
-    background: rgba(0, 0, 0, 0.05);
+    background: #2a2d2e;
   }
 
   .toggle {
     width: 12px;
     flex-shrink: 0;
-    color: #666;
+    color: #808080;
+    font-size: 10px;
   }
 
   .toggle-placeholder {
@@ -101,51 +101,25 @@
   }
 
   .bytes {
-    color: #1976d2;
+    color: #4ec9b0;
     font-weight: 600;
     min-width: 80px;
     flex-shrink: 0;
   }
 
   .function {
-    color: #333;
+    color: #dcdcaa;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   .file {
-    color: #888;
-    font-size: 12px;
+    color: #6a9955;
+    font-size: 11px;
   }
 
   .children {
-    border-left: 1px solid #e0e0e0;
-    margin-left: calc(var(--depth) * 20px + 14px);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .node-header:hover {
-      background: rgba(255, 255, 255, 0.05);
-    }
-
-    .toggle {
-      color: #aaa;
-    }
-
-    .bytes {
-      color: #64b5f6;
-    }
-
-    .function {
-      color: #e0e0e0;
-    }
-
-    .file {
-      color: #888;
-    }
-
-    .children {
-      border-left-color: #444;
-    }
+    border-left: 1px solid #3c3c3c;
+    margin-left: 20px;
   }
 </style>

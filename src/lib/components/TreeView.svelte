@@ -62,25 +62,27 @@
     height: 100%;
     display: flex;
     flex-direction: column;
+    background: #1e1e1e;
   }
 
   .no-data {
     padding: 32px;
     text-align: center;
-    color: #666;
+    color: #808080;
   }
 
   .no-data .hint {
     font-size: 13px;
-    color: #888;
+    color: #6a6a6a;
     margin-top: 8px;
   }
 
   .no-data code {
-    background: #f5f5f5;
+    background: #2d2d2d;
     padding: 2px 6px;
     border-radius: 4px;
-    font-family: monospace;
+    font-family: "SF Mono", Monaco, "Cascadia Code", monospace;
+    color: #ce9178;
   }
 
   .snapshot-selector {
@@ -88,57 +90,33 @@
     align-items: center;
     gap: 12px;
     padding: 12px 16px;
-    border-bottom: 1px solid #e0e0e0;
-    background: #fafafa;
+    border-bottom: 1px solid #3c3c3c;
+    background: #252526;
   }
 
   .snapshot-selector label {
     font-weight: 500;
-    color: #555;
+    color: #cccccc;
+    font-size: 13px;
   }
 
   .snapshot-selector select {
     padding: 6px 12px;
-    border: 1px solid #ccc;
+    border: 1px solid #3c3c3c;
     border-radius: 4px;
-    font-size: 14px;
-    background: white;
+    font-size: 13px;
+    background: #3c3c3c;
+    color: #d4d4d4;
     cursor: pointer;
+  }
+
+  .snapshot-selector select:hover {
+    border-color: #4fc3f7;
   }
 
   .tree-container {
     flex: 1;
     overflow: auto;
     padding: 8px 0;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .no-data {
-      color: #aaa;
-    }
-
-    .no-data .hint {
-      color: #777;
-    }
-
-    .no-data code {
-      background: #333;
-      color: #e0e0e0;
-    }
-
-    .snapshot-selector {
-      background: #2a2a2a;
-      border-bottom-color: #444;
-    }
-
-    .snapshot-selector label {
-      color: #bbb;
-    }
-
-    .snapshot-selector select {
-      background: #333;
-      border-color: #555;
-      color: #e0e0e0;
-    }
   }
 </style>

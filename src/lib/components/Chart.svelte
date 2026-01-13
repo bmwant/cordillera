@@ -69,12 +69,14 @@
           {
             label: "Heap Memory (MB)",
             data,
-            borderColor: "#1976d2",
-            backgroundColor: "rgba(25, 118, 210, 0.1)",
+            borderColor: "#4fc3f7",
+            backgroundColor: "rgba(79, 195, 247, 0.1)",
             fill: true,
             tension: 0.1,
             pointRadius: 3,
             pointHoverRadius: 6,
+            pointBackgroundColor: "#4fc3f7",
+            pointBorderColor: "#4fc3f7",
           },
         ],
       },
@@ -85,8 +87,16 @@
           legend: {
             display: true,
             position: "top",
+            labels: {
+              color: "#d4d4d4",
+            },
           },
           tooltip: {
+            backgroundColor: "#252526",
+            titleColor: "#d4d4d4",
+            bodyColor: "#d4d4d4",
+            borderColor: "#3c3c3c",
+            borderWidth: 1,
             callbacks: {
               title: (items) => {
                 const idx = items[0]?.dataIndex;
@@ -116,6 +126,13 @@
             title: {
               display: true,
               text: "Time (seconds)",
+              color: "#808080",
+            },
+            ticks: {
+              color: "#808080",
+            },
+            grid: {
+              color: "#2d2d2d",
             },
           },
           y: {
@@ -123,6 +140,13 @@
             title: {
               display: true,
               text: "Memory (MB)",
+              color: "#808080",
+            },
+            ticks: {
+              color: "#808080",
+            },
+            grid: {
+              color: "#2d2d2d",
             },
             beginAtZero: true,
           },
@@ -162,7 +186,9 @@
 <style>
   .chart-container {
     width: 100%;
-    height: 400px;
+    height: 100%;
     padding: 16px;
+    box-sizing: border-box;
+    background: #1e1e1e;
   }
 </style>
