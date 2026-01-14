@@ -4,18 +4,23 @@
 
   interface Props {
     snapshots: Snapshot[];
+    selectedIndex: number;
+    onSelectedIndexChange: (index: number) => void;
   }
 
-  let { snapshots }: Props = $props();
+  let { snapshots, selectedIndex, onSelectedIndexChange }: Props = $props();
 
   // Get snapshots that have detailed heap trees
   let detailedSnapshots = $derived(
     snapshots.filter((s) => s.heap_tree !== null)
   );
 
-  let selectedIndex = $state(0);
-
   let selectedSnapshot = $derived(detailedSnapshots[selectedIndex] || null);
+
+  function handleSelectChange(e: Event) {
+    const target = e.target as HTMLSelectElement;
+    onSelectedIndexChange(Number(target.value));
+  }
 
   function formatBytes(bytes: number): string {
     if (bytes >= 1024 * 1024) {
@@ -40,7 +45,7 @@
   {:else}
     <div class="snapshot-selector">
       <label for="snapshot-select">Snapshot:</label>
-      <select id="snapshot-select" bind:value={selectedIndex}>
+      <select id="snapshot-select" value={selectedIndex} onchange={handleSelectChange}>
         {#each detailedSnapshots as snapshot, i}
           <option value={i}>
             #{snapshot.snapshot_num} - {formatBytes(snapshot.mem_heap_b)}
@@ -51,7 +56,7 @@
 
     {#if selectedSnapshot?.heap_tree}
       <div class="tree-container">
-        <TreeNode node={selectedSnapshot.heap_tree} />
+        <TreeNode node={selectedSnapshot.heap_tree} maxBytes={selectedSnapshot.heap_tree.bytes} />
       </div>
     {/if}
   {/if}

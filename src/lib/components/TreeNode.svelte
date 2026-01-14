@@ -5,12 +5,28 @@
   interface Props {
     node: HeapNode;
     depth?: number;
+    maxBytes: number;
   }
 
-  let { node, depth = 0 }: Props = $props();
+  let { node, depth = 0, maxBytes }: Props = $props();
 
   const initialDepth = depth;
   let expanded = $state(initialDepth < 2); // Auto-expand first 2 levels
+
+  // Calculate color intensity based on memory usage (0 to 1)
+  let intensity = $derived(maxBytes > 0 ? node.bytes / maxBytes : 0);
+
+  // Generate background color - red-orange gradient based on intensity
+  function getBackgroundColor(intensity: number): string {
+    if (intensity < 0.01) return "transparent";
+    // Use a red-orange color with varying opacity
+    const alpha = Math.min(0.4, intensity * 0.5);
+    // Interpolate from orange (low) to red (high)
+    const r = Math.round(200 + intensity * 55); // 200-255
+    const g = Math.round(100 - intensity * 70); // 100-30
+    const b = Math.round(50 - intensity * 30);  // 50-20
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
 
   function formatBytes(bytes: number): string {
     if (bytes >= 1024 * 1024 * 1024) {
@@ -36,6 +52,7 @@
   <div
     class="node-header"
     class:expandable={node.children.length > 0}
+    style="background: {getBackgroundColor(intensity)}"
     onclick={toggle}
     onkeydown={(e) => e.key === "Enter" && toggle()}
     role="button"
@@ -56,7 +73,7 @@
   {#if expanded && node.children.length > 0}
     <div class="children">
       {#each node.children as child}
-        <TreeNode node={child} depth={depth + 1} />
+        <TreeNode node={child} depth={depth + 1} {maxBytes} />
       {/each}
     </div>
   {/if}
@@ -78,6 +95,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    transition: background 0.1s ease;
   }
 
   .node-header.expandable {
@@ -85,7 +103,7 @@
   }
 
   .node-header:hover {
-    background: #2a2d2e;
+    filter: brightness(1.2);
   }
 
   .toggle {

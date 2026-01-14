@@ -1,8 +1,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { invoke } from "@tauri-apps/api/core";
-  import { open } from "@tauri-apps/plugin-dialog";
+  import { open, save } from "@tauri-apps/plugin-dialog";
   import { listen } from "@tauri-apps/api/event";
+  import { writeTextFile } from "@tauri-apps/plugin-fs";
   import Tabs from "$lib/components/Tabs.svelte";
   import Chart from "$lib/components/Chart.svelte";
   import TreeView from "$lib/components/TreeView.svelte";
@@ -12,14 +13,45 @@
   let loading = $state(false);
   let error = $state("");
   let activeTab = $state("Chart");
+  let treeSelectedIndex = $state(0);
+  let chartComponent: Chart | null = $state(null);
 
   const tabs = ["Chart", "Tree"];
+
+  async function exportToSvg() {
+    if (!chartComponent || !massifData) {
+      error = "No chart data to export";
+      return;
+    }
+
+    try {
+      const svgContent = chartComponent.exportSvg();
+      if (!svgContent) {
+        error = "Failed to generate SVG";
+        return;
+      }
+
+      const filePath = await save({
+        filters: [{ name: "SVG Image", extensions: ["svg"] }],
+        defaultPath: "chart.svg",
+      });
+
+      if (!filePath) return;
+
+      await writeTextFile(filePath, svgContent);
+    } catch (e) {
+      error = e instanceof Error ? e.message : String(e);
+    }
+  }
 
   async function openFile() {
     try {
       error = "";
       const filePath = await open({
-        filters: [{ name: "Massif Output", extensions: ["out"] }],
+        filters: [
+          { name: "Massif Output", extensions: ["out"] },
+          { name: "All Files", extensions: ["*"] },
+        ],
       });
 
       if (!filePath) return;
@@ -28,6 +60,7 @@
       massifData = await invoke<MassifData>("parse_massif", {
         path: filePath,
       });
+      treeSelectedIndex = 0; // Reset selection for new file
     } catch (e) {
       error = e instanceof Error ? e.message : String(e);
       massifData = null;
@@ -41,12 +74,17 @@
   }
 
   onMount(() => {
-    const unlisten = listen("menu-open-file", () => {
+    const unlistenOpen = listen("menu-open-file", () => {
       openFile();
     });
 
+    const unlistenExport = listen("menu-export-svg", () => {
+      exportToSvg();
+    });
+
     return () => {
-      unlisten.then((fn) => fn());
+      unlistenOpen.then((fn) => fn());
+      unlistenExport.then((fn) => fn());
     };
   });
 </script>
@@ -68,9 +106,13 @@
 
     <div class="content">
       {#if activeTab === "Chart"}
-        <Chart snapshots={massifData.snapshots} timeUnit={massifData.time_unit} />
+        <Chart bind:this={chartComponent} snapshots={massifData.snapshots} timeUnit={massifData.time_unit} />
       {:else if activeTab === "Tree"}
-        <TreeView snapshots={massifData.snapshots} />
+        <TreeView
+          snapshots={massifData.snapshots}
+          selectedIndex={treeSelectedIndex}
+          onSelectedIndexChange={(idx) => treeSelectedIndex = idx}
+        />
       {/if}
     </div>
   {:else if !loading}
