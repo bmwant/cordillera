@@ -302,23 +302,33 @@
   export function exportSvg(): string | null {
     if (!chart || !canvas) return null;
 
+    // Use the canvas internal dimensions directly
     const width = canvas.width;
     const height = canvas.height;
-    const ctx = chart.ctx;
 
     // Get chart area and scales
     const chartArea = chart.chartArea;
     const xScale = chart.scales.x;
     const yScale = chart.scales.y;
 
-    // Start building SVG
+    // Helper to escape XML special characters
+    const escapeXml = (str: string): string => {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+    };
+
+    // Start building SVG - use canvas dimensions for viewBox
     let svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
   <rect width="100%" height="100%" fill="#1e1e1e"/>
   <style>
-    .axis-label { font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 12px; fill: #808080; }
-    .title { font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; fill: #d4d4d4; }
-    .legend { font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 11px; fill: #d4d4d4; }
+    .axis-label { font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 24px; fill: #808080; }
+    .axis-title { font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 26px; fill: #808080; }
+    .legend-text { font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 22px; fill: #d4d4d4; }
   </style>
 `;
 
@@ -327,50 +337,65 @@
     const gridColor = "#2d2d2d";
 
     // Y grid lines
-    yScale.ticks.forEach((tick: any, i: number) => {
+    yScale.ticks.forEach((tick: any) => {
       const y = yScale.getPixelForValue(tick.value);
       svg += `    <line x1="${chartArea.left}" y1="${y}" x2="${chartArea.right}" y2="${y}" stroke="${gridColor}" stroke-width="1"/>\n`;
     });
 
     // X grid lines
-    xScale.ticks.forEach((tick: any, i: number) => {
+    xScale.ticks.forEach((tick: any) => {
       const x = xScale.getPixelForValue(tick.value);
       svg += `    <line x1="${x}" y1="${chartArea.top}" x2="${x}" y2="${chartArea.bottom}" stroke="${gridColor}" stroke-width="1"/>\n`;
     });
     svg += `  </g>\n`;
 
-    // Draw datasets
+    // Draw datasets - reverse order so smaller datasets render on top
     svg += `  <g class="datasets">\n`;
 
-    chart.data.datasets.forEach((dataset: any, datasetIndex: number) => {
+    const datasets = chart.data.datasets;
+    const datasetIndices = [...Array(datasets.length).keys()].reverse();
+
+    // First pass: draw all fills in reverse order (largest first, smallest last/on top)
+    datasetIndices.forEach((datasetIndex: number) => {
+      const dataset = datasets[datasetIndex];
       const meta = chart.getDatasetMeta(datasetIndex);
       const points: { x: number; y: number }[] = [];
 
-      meta.data.forEach((point: any, i: number) => {
+      meta.data.forEach((point: any) => {
+        points.push({ x: point.x, y: point.y });
+      });
+
+      if (points.length > 0 && dataset.fill) {
+        let areaPath = `M ${points[0].x} ${chartArea.bottom} `;
+        points.forEach((p) => {
+          areaPath += `L ${p.x} ${p.y} `;
+        });
+        areaPath += `L ${points[points.length - 1].x} ${chartArea.bottom} Z`;
+        svg += `    <path d="${areaPath}" fill="${dataset.backgroundColor}"/>\n`;
+      }
+    });
+
+    // Second pass: draw all lines and points (on top of fills)
+    datasetIndices.forEach((datasetIndex: number) => {
+      const dataset = datasets[datasetIndex];
+      const meta = chart.getDatasetMeta(datasetIndex);
+      const points: { x: number; y: number }[] = [];
+
+      meta.data.forEach((point: any) => {
         points.push({ x: point.x, y: point.y });
       });
 
       if (points.length > 0) {
-        // Draw fill area if fill is enabled
-        if (dataset.fill) {
-          let areaPath = `M ${points[0].x} ${chartArea.bottom} `;
-          points.forEach((p) => {
-            areaPath += `L ${p.x} ${p.y} `;
-          });
-          areaPath += `L ${points[points.length - 1].x} ${chartArea.bottom} Z`;
-          svg += `    <path d="${areaPath}" fill="${dataset.backgroundColor}" opacity="0.7"/>\n`;
-        }
-
         // Draw line
         let linePath = `M ${points[0].x} ${points[0].y}`;
         for (let i = 1; i < points.length; i++) {
           linePath += ` L ${points[i].x} ${points[i].y}`;
         }
-        svg += `    <path d="${linePath}" fill="none" stroke="${dataset.borderColor}" stroke-width="2"/>\n`;
+        svg += `    <path d="${linePath}" fill="none" stroke="${dataset.borderColor}" stroke-width="3"/>\n`;
 
         // Draw points
         points.forEach((p) => {
-          svg += `    <circle cx="${p.x}" cy="${p.y}" r="${dataset.pointRadius || 3}" fill="${dataset.borderColor}"/>\n`;
+          svg += `    <circle cx="${p.x}" cy="${p.y}" r="${(dataset.pointRadius || 3) * 2}" fill="${dataset.borderColor}"/>\n`;
         });
       }
     });
@@ -379,35 +404,38 @@
     // Draw axis labels
     svg += `  <g class="axis-labels">\n`;
 
-    // X axis label
-    svg += `    <text class="axis-label" x="${(chartArea.left + chartArea.right) / 2}" y="${height - 10}" text-anchor="middle">Time (seconds)</text>\n`;
+    // X axis title
+    svg += `    <text class="axis-title" x="${(chartArea.left + chartArea.right) / 2}" y="${height - 20}" text-anchor="middle">Time (seconds)</text>\n`;
 
-    // Y axis label
-    svg += `    <text class="axis-label" x="15" y="${(chartArea.top + chartArea.bottom) / 2}" text-anchor="middle" transform="rotate(-90, 15, ${(chartArea.top + chartArea.bottom) / 2})">Memory (MB)</text>\n`;
+    // Y axis title
+    const yAxisLabelY = (chartArea.top + chartArea.bottom) / 2;
+    svg += `    <text class="axis-title" x="30" y="${yAxisLabelY}" text-anchor="middle" transform="rotate(-90, 30, ${yAxisLabelY})">Memory (MB)</text>\n`;
 
     // X axis tick labels
     xScale.ticks.forEach((tick: any) => {
       const x = xScale.getPixelForValue(tick.value);
-      svg += `    <text class="axis-label" x="${x}" y="${chartArea.bottom + 20}" text-anchor="middle">${tick.value.toFixed(1)}</text>\n`;
+      svg += `    <text class="axis-label" x="${x}" y="${chartArea.bottom + 40}" text-anchor="middle">${tick.value.toFixed(1)}</text>\n`;
     });
 
     // Y axis tick labels
     yScale.ticks.forEach((tick: any) => {
       const y = yScale.getPixelForValue(tick.value);
-      svg += `    <text class="axis-label" x="${chartArea.left - 10}" y="${y + 4}" text-anchor="end">${tick.value.toFixed(1)}</text>\n`;
+      svg += `    <text class="axis-label" x="${chartArea.left - 15}" y="${y + 8}" text-anchor="end">${tick.value.toFixed(1)}</text>\n`;
     });
 
     svg += `  </g>\n`;
 
-    // Draw legend
+    // Draw legend - vertical column on the right
     svg += `  <g class="legend">\n`;
-    let legendX = chartArea.left;
-    const legendY = 20;
+    const legendX = chartArea.right + 30;
+    let legendY = chartArea.top + 30;
+    const legendRowHeight = 35;
 
-    chart.data.datasets.forEach((dataset: any, i: number) => {
-      svg += `    <rect x="${legendX}" y="${legendY - 8}" width="12" height="12" fill="${dataset.backgroundColor || dataset.borderColor}"/>\n`;
-      svg += `    <text class="legend" x="${legendX + 16}" y="${legendY}">${dataset.label}</text>\n`;
-      legendX += 16 + dataset.label.length * 7 + 20;
+    datasets.forEach((dataset: any) => {
+      const label = escapeXml(dataset.label || '');
+      svg += `    <rect x="${legendX}" y="${legendY - 15}" width="20" height="20" fill="${dataset.backgroundColor || dataset.borderColor}"/>\n`;
+      svg += `    <text class="legend-text" x="${legendX + 30}" y="${legendY}">${label}</text>\n`;
+      legendY += legendRowHeight;
     });
 
     svg += `  </g>\n`;

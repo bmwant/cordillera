@@ -17,6 +17,16 @@
 
   let selectedSnapshot = $derived(detailedSnapshots[selectedIndex] || null);
 
+  // Find peak memory snapshot
+  let peakSnapshot = $derived(() => {
+    if (detailedSnapshots.length === 0) return null;
+    return detailedSnapshots.reduce((peak, s) =>
+      s.mem_heap_b > peak.mem_heap_b ? s : peak
+    , detailedSnapshots[0]);
+  });
+
+  let peakMemory = $derived(peakSnapshot() ? peakSnapshot()!.mem_heap_b : 0);
+
   function handleSelectChange(e: Event) {
     const target = e.target as HTMLSelectElement;
     onSelectedIndexChange(Number(target.value));
@@ -43,15 +53,21 @@
       </p>
     </div>
   {:else}
-    <div class="snapshot-selector">
-      <label for="snapshot-select">Snapshot:</label>
-      <select id="snapshot-select" value={selectedIndex} onchange={handleSelectChange}>
-        {#each detailedSnapshots as snapshot, i}
-          <option value={i}>
-            #{snapshot.snapshot_num} - {formatBytes(snapshot.mem_heap_b)}
-          </option>
-        {/each}
-      </select>
+    <div class="tree-header">
+      <div class="peak-info">
+        <span class="peak-label">Peak Memory:</span>
+        <span class="peak-value">{formatBytes(peakMemory)}</span>
+      </div>
+      <div class="snapshot-selector">
+        <label for="snapshot-select">Snapshot:</label>
+        <select id="snapshot-select" value={selectedIndex} onchange={handleSelectChange}>
+          {#each detailedSnapshots as snapshot, i}
+            <option value={i}>
+              #{snapshot.snapshot_num} - {formatBytes(snapshot.mem_heap_b)}
+            </option>
+          {/each}
+        </select>
+      </div>
     </div>
 
     {#if selectedSnapshot?.heap_tree}
@@ -90,13 +106,37 @@
     color: #ce9178;
   }
 
+  .tree-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid #3c3c3c;
+    background: #252526;
+  }
+
+  .peak-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .peak-label {
+    font-size: 13px;
+    color: #808080;
+  }
+
+  .peak-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #4ec9b0;
+    font-family: "SF Mono", Monaco, "Cascadia Code", monospace;
+  }
+
   .snapshot-selector {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 16px;
-    border-bottom: 1px solid #3c3c3c;
-    background: #252526;
   }
 
   .snapshot-selector label {

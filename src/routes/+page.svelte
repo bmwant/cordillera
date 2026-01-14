@@ -48,10 +48,7 @@
     try {
       error = "";
       const filePath = await open({
-        filters: [
-          { name: "Massif Output", extensions: ["out"] },
-          { name: "All Files", extensions: ["*"] },
-        ],
+        title: "Open Massif Output File",
       });
 
       if (!filePath) return;
@@ -60,7 +57,22 @@
       massifData = await invoke<MassifData>("parse_massif", {
         path: filePath,
       });
-      treeSelectedIndex = 0; // Reset selection for new file
+
+      // Find and select the peak memory snapshot
+      const detailedSnapshots = massifData.snapshots.filter(s => s.heap_tree !== null);
+      if (detailedSnapshots.length > 0) {
+        let peakIndex = 0;
+        let peakBytes = detailedSnapshots[0].mem_heap_b;
+        detailedSnapshots.forEach((s, i) => {
+          if (s.mem_heap_b > peakBytes) {
+            peakBytes = s.mem_heap_b;
+            peakIndex = i;
+          }
+        });
+        treeSelectedIndex = peakIndex;
+      } else {
+        treeSelectedIndex = 0;
+      }
     } catch (e) {
       error = e instanceof Error ? e.message : String(e);
       massifData = null;

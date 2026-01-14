@@ -134,6 +134,15 @@ fn parse_massif_content(content: &str) -> Result<MassifData, String> {
         i += 1;
     }
 
+    // Validate that this looks like a massif file
+    if snapshots.is_empty() {
+        return Err("Invalid file: No snapshots found. This doesn't appear to be a valid Valgrind Massif output file.".to_string());
+    }
+
+    if time_unit.is_empty() {
+        return Err("Invalid file: No time_unit found. This doesn't appear to be a valid Valgrind Massif output file.".to_string());
+    }
+
     Ok(MassifData {
         desc,
         cmd,
