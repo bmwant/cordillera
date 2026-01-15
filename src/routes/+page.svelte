@@ -15,6 +15,7 @@
   let activeTab = $state("Chart");
   let treeSelectedIndex = $state(0);
   let chartComponent: Chart | null = $state(null);
+  let openedFileName = $state("");
 
   const tabs = ["Chart", "Tree"];
 
@@ -31,9 +32,10 @@
         return;
       }
 
+      const defaultName = openedFileName ? `chart-${openedFileName}.svg` : "chart.svg";
       const filePath = await save({
         filters: [{ name: "SVG Image", extensions: ["svg"] }],
-        defaultPath: "chart.svg",
+        defaultPath: defaultName,
       });
 
       if (!filePath) return;
@@ -52,6 +54,10 @@
       });
 
       if (!filePath) return;
+
+      // Extract filename from path
+      const pathStr = typeof filePath === 'string' ? filePath : filePath.path;
+      openedFileName = pathStr.split('/').pop()?.split('\\').pop() || "";
 
       loading = true;
       massifData = await invoke<MassifData>("parse_massif", {
