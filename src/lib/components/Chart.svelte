@@ -302,11 +302,12 @@
   export function exportSvg(): string | null {
     if (!chart || !canvas) return null;
 
-    // Use the canvas internal dimensions directly
-    const width = canvas.width;
-    const height = canvas.height;
+    // Chart.js uses CSS pixel coordinates, so use getBoundingClientRect
+    const rect = canvas.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
 
-    // Get chart area and scales
+    // Get chart area and scales (all in CSS pixels)
     const chartArea = chart.chartArea;
     const xScale = chart.scales.x;
     const yScale = chart.scales.y;
@@ -321,14 +322,14 @@
         .replace(/'/g, '&apos;');
     };
 
-    // Start building SVG - use canvas dimensions for viewBox
+    // Start building SVG with CSS pixel dimensions
     let svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
   <rect width="100%" height="100%" fill="#1e1e1e"/>
   <style>
-    .axis-label { font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 24px; fill: #808080; }
-    .axis-title { font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 26px; fill: #808080; }
-    .legend-text { font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 22px; fill: #d4d4d4; }
+    .axis-label { font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 11px; fill: #808080; }
+    .axis-title { font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 12px; fill: #808080; }
+    .legend-text { font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 11px; fill: #d4d4d4; }
   </style>
 `;
 
@@ -391,11 +392,11 @@
         for (let i = 1; i < points.length; i++) {
           linePath += ` L ${points[i].x} ${points[i].y}`;
         }
-        svg += `    <path d="${linePath}" fill="none" stroke="${dataset.borderColor}" stroke-width="3"/>\n`;
+        svg += `    <path d="${linePath}" fill="none" stroke="${dataset.borderColor}" stroke-width="2"/>\n`;
 
         // Draw points
         points.forEach((p) => {
-          svg += `    <circle cx="${p.x}" cy="${p.y}" r="${(dataset.pointRadius || 3) * 2}" fill="${dataset.borderColor}"/>\n`;
+          svg += `    <circle cx="${p.x}" cy="${p.y}" r="${dataset.pointRadius || 2}" fill="${dataset.borderColor}"/>\n`;
         });
       }
     });
@@ -405,36 +406,41 @@
     svg += `  <g class="axis-labels">\n`;
 
     // X axis title
-    svg += `    <text class="axis-title" x="${(chartArea.left + chartArea.right) / 2}" y="${height - 20}" text-anchor="middle">Time (seconds)</text>\n`;
+    svg += `    <text class="axis-title" x="${(chartArea.left + chartArea.right) / 2}" y="${height - 5}" text-anchor="middle">Time (seconds)</text>\n`;
 
     // Y axis title
     const yAxisLabelY = (chartArea.top + chartArea.bottom) / 2;
-    svg += `    <text class="axis-title" x="30" y="${yAxisLabelY}" text-anchor="middle" transform="rotate(-90, 30, ${yAxisLabelY})">Memory (MB)</text>\n`;
+    svg += `    <text class="axis-title" x="10" y="${yAxisLabelY}" text-anchor="middle" transform="rotate(-90, 10, ${yAxisLabelY})">Memory (MB)</text>\n`;
 
     // X axis tick labels
     xScale.ticks.forEach((tick: any) => {
       const x = xScale.getPixelForValue(tick.value);
-      svg += `    <text class="axis-label" x="${x}" y="${chartArea.bottom + 40}" text-anchor="middle">${tick.value.toFixed(1)}</text>\n`;
+      svg += `    <text class="axis-label" x="${x}" y="${chartArea.bottom + 15}" text-anchor="middle">${tick.value.toFixed(1)}</text>\n`;
     });
 
     // Y axis tick labels
     yScale.ticks.forEach((tick: any) => {
       const y = yScale.getPixelForValue(tick.value);
-      svg += `    <text class="axis-label" x="${chartArea.left - 15}" y="${y + 8}" text-anchor="end">${tick.value.toFixed(1)}</text>\n`;
+      svg += `    <text class="axis-label" x="${chartArea.left - 5}" y="${y + 3}" text-anchor="end">${tick.value.toFixed(1)}</text>\n`;
     });
 
     svg += `  </g>\n`;
 
-    // Draw legend - vertical column on the right
+    // Draw legend - vertical column inside chart area (top-left)
     svg += `  <g class="legend">\n`;
-    const legendX = chartArea.right + 30;
-    let legendY = chartArea.top + 30;
-    const legendRowHeight = 35;
+    const legendX = chartArea.left + 10;
+    let legendY = chartArea.top + 15;
+    const legendRowHeight = 16;
+
+    // Draw legend background
+    const legendHeight = datasets.length * legendRowHeight + 10;
+    const legendWidth = 150;
+    svg += `    <rect x="${legendX - 5}" y="${chartArea.top + 2}" width="${legendWidth}" height="${legendHeight}" fill="rgba(30, 30, 30, 0.85)" rx="3"/>\n`;
 
     datasets.forEach((dataset: any) => {
       const label = escapeXml(dataset.label || '');
-      svg += `    <rect x="${legendX}" y="${legendY - 15}" width="20" height="20" fill="${dataset.backgroundColor || dataset.borderColor}"/>\n`;
-      svg += `    <text class="legend-text" x="${legendX + 30}" y="${legendY}">${label}</text>\n`;
+      svg += `    <rect x="${legendX}" y="${legendY - 8}" width="10" height="10" fill="${dataset.backgroundColor || dataset.borderColor}"/>\n`;
+      svg += `    <text class="legend-text" x="${legendX + 14}" y="${legendY}">${label}</text>\n`;
       legendY += legendRowHeight;
     });
 
