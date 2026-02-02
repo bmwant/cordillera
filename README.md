@@ -15,7 +15,7 @@ track allocation patterns, and optimize your application's memory footprint.
 ## Features
 
 - :desktop_computer: **Cross-platform** - Native builds for macOS, Linux, and Windows
-- :chart_with_upwards_trend: **Interactive chart** - Visualize memory consumption over time with zoomable Chart.js graphs
+- :chart_with_upwards_trend: **Interactive chart** - Visualize memory consumption over time with graphs
 - :deciduous_tree: **Heap tree explorer** - Navigate detailed snapshots with expandable callgraph visualization
 - :bar_chart: **Peak analysis** - Summary of peak memory consumption across all allocating functions
 - :package: **Export to SVG** - Save charts as vector graphics for reports and documentation
