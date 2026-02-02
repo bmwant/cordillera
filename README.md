@@ -1,5 +1,9 @@
 # Cordillera
 
+<p align="center">
+  <img src="static/logo.png" alt="Cordillera Logo" />
+</p>
+
 A desktop application for visualizing [Massif](https://valgrind.org/docs/manual/ms-manual.html) memory profiling data produced by [Valgrind](https://valgrind.org/).
 
 Valgrind's Massif tool profiles heap memory usage in your programs, capturing snapshots of memory allocation over time. 
